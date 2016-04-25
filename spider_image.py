@@ -6,14 +6,14 @@
 提供以下功能:
 1. 获取百度图库一级分类
 2. 获取百度图库 "壁纸"分类
-3. 获取各个分类下的图片原始链接
+3. 获取"壁纸"分类下的图片原始链接
 '''
 
-from urllib import request
+import urllib
+from urllib import request, parse
 from bs4 import BeautifulSoup
 import re, socket
-import os
-import json
+import os, datetime
 
 IMAGE_BASE_URL = "http://image.baidu.com/"
 
@@ -52,6 +52,7 @@ def request_url(url, headers={}, data=None, method=None):
     return respon
 
 
+# 1. 获取百度图库一级分类
 def get_first_level_classification():
     respon_data = request_url(IMAGE_BASE_URL, headers=headers, method='GET')
     if respon_data is None:
@@ -77,6 +78,8 @@ def get_first_level_classification():
 
     return ret_classifys
 
+
+# 2. 获取百度图库 "壁纸"分类
 def get_wallpaper_levels(url):
     respon_data = request_url(url, headers=headers, method='GET')
     if respon_data is None:
@@ -103,17 +106,19 @@ def get_wallpaper_levels(url):
 
     return ret_levels
 
-def convert_url(tmp_url):
-    if tmp_url is None or len(tmp_url) == 0:
-        return None
+# 3. 获取"壁纸"分类下的图片原始链接
+def get_wallpaper_urls(word=None, width=1440, height=900, curser=0, page_num=60):
+    if word is None:
+        word = ""
+    if width is None or height is None:
+        width = ""
+        height = ""
 
-def open_url(url):
-    if url is None or len(url) == 0:
-        return None, None
-
+    word_str = urllib.parse.urlencode({'word': word})
+    url = "http://image.baidu.com/search/avatarjson?tn=resultjsonavatarnew&ie=utf-8&" + word_str + "&cg=wallpaper&pn=" + str(curser) + "&rn=" + str(page_num) + "&itg=1&z=0&fr=&width=" + str(width) + "&height=" + str(height) + "&lm=-1&ic=&s=0&st=-1&gsm=78"
     resp_data = request_url(url, headers, method='GET')
 
-    name_pattern = re.compile(u'\"name\":\"\w+\s+\w+\s+\w+\"')
+    name_pattern = re.compile(u'\"nam e\":\"\w+\s+\w+\s+\w+\"')
     all_names = name_pattern.findall(resp_data)
     ret_names = []
     for item in all_names:
@@ -137,33 +142,35 @@ def get_images(urls, save_dir):
         end = os.path.splitext(url)[1]
         if len(end) == 0:
                 end = ".jpg"
-        img_path = save_dir + '%i%s' % (index, end)
-        image = request.urlretrieve(url, img_path)
-        index = index + 1
+        img_path = save_dir + str(datetime.datetime.now().microsecond) + '_%i%s' % (index, end)
+        try:
+            image = request.urlretrieve(url, img_path)
+            index = index + 1
+        except Exception as e:
+            print(e)
+            pass
 
 
 if __name__ == '__main__':
     # 1. 获取百度图库一级分类
-    first_levels = get_first_level_classification()
-    if first_levels is not None:
-        print('First Levels:\n')
-        print(''.join('{level}\n'.format(level = level) for level in first_levels))
+    # first_levels = get_first_level_classification()
+    # if first_levels is not None:
+    #     print('First Levels:\n')
+    #     print(''.join('{level}\n'.format(level = level) for level in first_levels))
 
         # 2. 获取百度图库 "壁纸"分类
-        wallpaper_url = first_levels['壁纸']
-        if wallpaper_url is not None:
-            wallpaper_levels = get_wallpaper_levels(wallpaper_url)
-            for level2 in wallpaper_levels:
-                print(level2 + ':\n')
-                print(''.join('\t{level3}\n'.format(level3 = level3) for level3 in wallpaper_levels[level2]))
+        # wallpaper_url = first_levels['壁纸']
+        # if wallpaper_url is not None:
+        #     wallpaper_levels = get_wallpaper_levels(wallpaper_url)
+        #     for level2 in wallpaper_levels:
+        #         print(level2 + ':\n')
+        #         print(''.join('\t{level3}\n'.format(level3 = level3) for level3 in wallpaper_levels[level2]))
             # if wallpaper_levels is not None:
 
+    # 3. 获取"壁纸"分类下的图片原始链接
+    names, urls = get_wallpaper_urls(word="壁纸 卡通动漫 守护甜心")
+    if urls is not None:
+        print(''.join('{url}\n'.format(url = url) for url in urls))
 
-    # url = "http://image.baidu.com/search/avatarjson?tn=resultjsonavatarnew&ie=utf-8&word=%E5%A3%81%E7%BA%B8%20%E5%8D%A1%E9%80%9A%E5%8A%A8%E6%BC%AB%20%E6%B5%B7%E8%B4%BC%E7%8E%8B&cg=wallpaper&pn=0&rn=60&itg=1&z=0&fr=&width=1440&height=900&lm=-1&ic=&s=0&st=-1&gsm=78"
-    # names, urls = open_url(url)
-    #
-    # if urls is not None:
-    #     print(''.join('{url}\n'.format(url = url) for url in urls))
-    #
-    # save_dir = "./baidu"
-    # get_images(urls, save_dir)
+    save_dir = "../wallpaper/"
+    get_images(urls, save_dir)
