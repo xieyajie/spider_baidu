@@ -14,10 +14,10 @@ from urllib import request
 # from bs4 import BeautifulSoup
 import re
 import os
-import socket
 import datetime
 # import threading
 
+URL_TIMEOUT = 20
 IMAGE_BASE_URL = "http://image.baidu.com/"
 
 headers = {
@@ -43,12 +43,11 @@ class BDImage(object):
         if url is None:
             return None
 
-        socket.setdefaulttimeout(10)
         req = request.Request(url, headers=headers, data=data, method=method)
 
         respon_data = None
         try:
-            respon = request.urlopen(req)
+            respon = request.urlopen(req, timeout=URL_TIMEOUT)
             respon_data = respon.read()
         except:
             print("error")
@@ -184,6 +183,9 @@ class BDImage(object):
     下载图片
     '''
     def download_images(self, urls, save_dir):
+        if not save_dir.endswith('/'):
+            save_dir += "/"
+
         index = 0
         for url in urls:
             end = os.path.splitext(url)[1]
