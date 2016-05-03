@@ -15,7 +15,6 @@ from urllib import request
 import re
 import os
 import datetime
-# import threading
 
 URL_TIMEOUT = 20
 IMAGE_BASE_URL = "http://image.baidu.com/"
@@ -138,6 +137,7 @@ class BDImage(object):
         for level3 in level3_list:
             item = level3.replace('name:', '')
             item = item.replace('\"', '')
+            item = item.replace(u'壁纸 ', '')
             for level2 in self.wallpaper_levels:
                 if item.find(level2) != -1:
                     self.wallpaper_levels[level2].append(item)
@@ -151,23 +151,43 @@ class BDImage(object):
         if word is None:
             word = ""
         if width is None or height is None:
-            width = ""
-            height = ""
+            width = 1440
+            height = 900
 
         word_str = parse.urlencode({'word': word})
         url = "http://image.baidu.com/search/avatarjson?tn=resultjsonavatarnew&ie=utf-8&" \
-              + word_str + "&cg=wallpaper&pn=" + str(curser) + "&rn=" + str(page_num) \
-              + "&itg=1&z=0&fr=&width=" + str(width) + "&height=" + str(height) \
+              + word_str \
+              + "&cg=wallpaper&pn=" + str(curser) \
+              + "&rn=" + str(page_num) \
+              + "&itg=1&z=0&fr=&width=" + str(width) \
+              + "&height=" + str(height) \
               + "&lm=-1&ic=&s=0&st=-1&gsm=78"
-        resp_data = self.request_url(url, headers, method='GET')
+        return self.get_object_urls(url, headers, method='GET')
 
-        name_pattern = re.compile(u'\"nam e\":\"\w+\s+\w+\s+\w+\"')
-        all_names = name_pattern.findall(resp_data)
-        ret_names = []
-        for item in all_names:
-            item = item.replace('\"name\":\"', '')
-            item = item.replace('\"', '')
-            ret_names.append(item)
+    def search_images(self, word=None, width=1440, height=900, curser=0, page_num=60):
+        if word is None:
+            word = ""
+        if width is None or height is None:
+            width = 1440
+            height = 900
+
+        word_str = parse.urlencode({'word': word})
+        url = "http://image.baidu.com/search/index?tn=baiduimage&ipn=r&ct=201326592&cl=2&" \
+              "lm=-1&st=-1&fm=index&fr=&sf=1&fmq=&pv=&ic=0&nc=1&z=&se=1&showtab=0&fb=0&" \
+              "face=0&istype=2&ie=utf-8&" + word_str\
+              + "&pn=" + str(curser) \
+              + "&rn=" + str(page_num)\
+              + "&width=" + str(width) \
+              + "&height=" + str(height)
+        return self.get_object_urls(url, headers, method='GET')
+
+    def get_object_urls(self, url=None, headers={}, data=None, method=None):
+        if url is None or len(url) == 0:
+            return None
+
+        resp_data = self.request_url(url, headers, method='GET')
+        if resp_data is None:
+            return None
 
         url_pattern = re.compile(r'\"objURL\":\"http://\w+[\.]\w+[\.]\w+[/\w*]*/\w*/[\w*\s*\-]+[\.]{1}\w+\"')
         all_urls = url_pattern.findall(resp_data)
@@ -177,7 +197,7 @@ class BDImage(object):
             item = item.replace('\"', '')
             ret_urls.append(item)
 
-        return ret_names, ret_urls
+        return ret_urls
 
     '''
     下载图片
